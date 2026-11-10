@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  passwordHash String
+  name         String
+  role         String
+  dni          String?    @unique
+  profession   String?
+  description  String?
+  services     String?
+  schedule     String?
+  createdAt    DateTime   @default(now())
+  isActive     Boolean    @default(true)
+  deletedAt    DateTime?
+  requests     Request[]  @relation("ClientRequests")
+  quotes       Quote[]    @relation("ProviderQuotes")
+  messages     Message[]
+  evidence     Evidence[]
+  clientReviews   Review[] @relation("ClientReviews")
+  providerReviews Review[] @relation("ProviderReviews")
+    conversationsAsClient   Conversation[] @relation("ConversationClient")
+  conversationsAsProvider Conversation[] @relation("ConversationProvider")
+}
+
+model Request {
+  id              String     @id @default(cuid())
+  clientId        String
+  client          User       @relation("ClientRequests", fields: [clientId], references: [id])
+  profession      String
+  description     String
+  preferredDate   String
+status          String     @default("SOLICITADO")
+  selectedQuoteId String?
+  createdAt       DateTime   @default(now())
+  quotes          Quote[]
+  evidence        Evidence[]
+  messages        Message[]
+  delays          Delay[]
+  payment         Payment?
+  review Review?
+}
+
+model Quote {
+  id              String   @id @default(cuid())
+  requestId       String
+  request         Request  @relation(fields: [requestId], references: [id])
+  providerId      String
+  provider        User     @relation("ProviderQuotes", fields: [providerId], references: [id])
+  preferredMoment String?
+  status          String   @default("PENDIENTE")
+  amount          Int?
+  detail          String?
+  createdAt       DateTime @default(now())
+
+  @@unique([requestId, providerId])
+}
+
+model Delay {
+  id         String   @id @default(cuid())
+  requestId  String
+  request    Request  @relation(fields: [requestId], references: [id])
+  providerId String
+  reason     String
+  minutes    Int
+  createdAt  DateTime @default(now())
+}
+
+model Evidence {
+  id        String   @id @default(cuid())
+  requestId String
+  request   Request  @relation(fields: [requestId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  stage     String
+  filename  String
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  requestId      String
+  request        Request       @relation(fields: [requestId], references: [id])
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  authorId       String
+  author         User          @relation(fields: [authorId], references: [id])
+  body           String
+  createdAt      DateTime      @default(now())
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  requestId String   @unique
+  request   Request  @relation(fields: [requestId], references: [id])
+  materials Int      @default(0)
+  labor     Int      @default(0)
+  status    String   @default("PENDIENTE")
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  requestId  String   @unique
+  request    Request  @relation(fields: [requestId], references: [id])
+  clientId   String
+  client     User     @relation("ClientReviews", fields: [clientId], references: [id])
+  providerId String
+  provider   User     @relation("ProviderReviews", fields: [providerId], references: [id])
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+}
+model Conversation {
+  id         String    @id @default(cuid())
+  clientId   String
+  providerId String
+  client     User      @relation("ConversationClient", fields: [clientId], references: [id])
+  provider   User      @relation("ConversationProvider", fields: [providerId], references: [id])
+  messages   Message[]
+  createdAt  DateTime  @default(now())
+
+  @@unique([clientId, providerId])
+}

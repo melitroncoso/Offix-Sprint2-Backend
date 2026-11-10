@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "services" TEXT;
+ALTER TABLE "User" ADD COLUMN "schedule" TEXT;
